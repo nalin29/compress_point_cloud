@@ -5,16 +5,22 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <tf/tfMessage.h>
+#include <iostream>
+#include <opencv2/opencv.hpp>
+#include <cv_bridge/cv_bridge.h>
+#include <opencv2/videoio.hpp> 
 
 void callback(const sensor_msgs::ImageConstPtr& rgbImage, const sensor_msgs::CameraInfoConstPtr& rgbInfo, const sensor_msgs::ImageConstPtr& depthImage, const sensor_msgs::CameraInfoConstPtr& depthInfo, tf::tfMessageConstPtr& tfData){
     // compression methods run here
+    cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(rgbImage, sensor_msgs::image_encodings::BGR8);
+    cv::VideoWriter rgbVideo("rbgOut.avi", CV_FOURCC('M','J','P','G'), 10, cv::Size(rgbImage->width, rgbImage->height));
 }
 
 int main(int argc, char** argv){
-    ros::init(argc, argv, "hw4_node");
+    ros::init(argc, argv, "compress_node");
     ros::NodeHandle n;
     std::string rgbImageNode = "camera/rgb/image_raw";
-    std::string rgbCamNode = "camera/rgb/camer_info";
+    std::string rgbCamNode = "camera/rgb/camera_info";
     std::string depthImageNode = "camera/depth/image_raw";
     std::string depthCamNode = "camera/depth/camera_info";
     std::string tfNode = "/tf";
