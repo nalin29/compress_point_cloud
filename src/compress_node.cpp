@@ -7,7 +7,7 @@
 #include <tf/tfMessage.h>
 
 void callback(const sensor_msgs::ImageConstPtr& rgbImage, const sensor_msgs::CameraInfoConstPtr& rgbInfo, const sensor_msgs::ImageConstPtr& depthImage, const sensor_msgs::CameraInfoConstPtr& depthInfo, tf::tfMessageConstPtr& tfData){
-    // compression metods run here
+    // compression methods run here
 }
 
 int main(int argc, char** argv){
