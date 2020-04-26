@@ -10,8 +10,8 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/videoio.hpp> 
 
-void callback(const sensor_msgs::ImageConstPtr& rgbImage, const sensor_msgs::CameraInfoConstPtr& rgbInfo, const sensor_msgs::ImageConstPtr& depthImage, const sensor_msgs::CameraInfoConstPtr& depthInfo, tf::tfMessageConstPtr& tfData){
-    // compression methods run here
+void callback(const sensor_msgs::ImageConstPtr& rgbImage, const sensor_msgs::CameraInfoConstPtr& rgbInfo, const sensor_msgs::ImageConstPtr& depthImage, const sensor_msgs::CameraInfoConstPtr& depthInfo){
+    // compression methods run here should be moved to a sepeate cpp for running
     cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(rgbImage, sensor_msgs::image_encodings::BGR8);
     cv::VideoWriter rgbVideo("rbgOut.avi", CV_FOURCC('M','J','P','G'), 10, cv::Size(rgbImage->width, rgbImage->height));
 }
@@ -32,8 +32,7 @@ int main(int argc, char** argv){
     message_filters::Subscriber<sensor_msgs::Image> rgb_image_sub(n, rgbImageNode, 1);
     message_filters::Subscriber<sensor_msgs::CameraInfo> rgb_cam_info(n, rgbCamNode, 1);
     message_filters::Subscriber<sensor_msgs::Image> depth_image(n, depthImageNode, 1);
-    message_filters::Subscriber<sensor_msgs::CameraInfo> depth_came_info(n, depthCamNode, 1);
-    message_filters::Subscriber<tf::tfMessage> tf_data(n, tfNode, 1);
-    message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::CameraInfo,sensor_msgs::Image, sensor_msgs::CameraInfo, tf::tfMessage> sync(rgb_image_sub, rgb_cam_info, depth_image, depth_came_info, tf_data, 5);
-    sync.registerCallback(boost::bind(&callback, _1, _2, _3, _4, _5));
+    message_filters::Subscriber<sensor_msgs::CameraInfo> depth_cam_info(n, depthCamNode, 1);
+    message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::CameraInfo,sensor_msgs::Image, sensor_msgs::CameraInfo> sync(rgb_image_sub, rgb_cam_info, depth_image, depth_cam_info, 5);
+    sync.registerCallback(boost::bind(&callback, _1, _2, _3, _4));
 }
