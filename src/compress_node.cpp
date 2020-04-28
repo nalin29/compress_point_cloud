@@ -52,7 +52,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "compress_node");
     std::string rgbImageNode = "/camera/rgb/image_color";
     std::string depthImageNode = "/camera/depth/image_raw";
-    cv::VideoWriter rgbVideo("rgbOut.avi", CV_FOURCC('M', 'J', 'P', 'G'), 30, cv::Size(640, 480));
+    cv::VideoWriter rgbVideo("rgbOut.mp4", CV_FOURCC('m', 'p', '4', 'v'), 30, cv::Size(640, 480));
     ros::NodeHandle n;
     imageSub im(n, rgbImageNode, depthImageNode, rgbVideo);
     ros::spin();
