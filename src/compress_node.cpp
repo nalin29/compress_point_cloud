@@ -23,7 +23,7 @@ class imageSub
     void callback(const sensor_msgs::ImageConstPtr &rgbImage, const sensor_msgs::ImageConstPtr &depthImage)
     {
         // compression methods run here should be moved to a sepeate cpp for running
-        rgbVideo.open("rgbOut.mp4", CV_FOURCC('M', 'P', '4', '2'), 60, cv::Size(480, 640));
+        rgbVideo.open("rgbOut.avi", CV_FOURCC('M', 'J', 'P', 'G'), 60, cv::Size(640, 480));
         cv_bridge::CvImagePtr cv_ptr1 = cv_bridge::toCvCopy(rgbImage, sensor_msgs::image_encodings::BGR8);
         cv::Mat image1 = cv_ptr1->image;
         cv_bridge::CvImagePtr cv_ptr2 = cv_bridge::toCvCopy(depthImage, sensor_msgs::image_encodings::TYPE_16UC1);
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "compress_node");
     std::string rgbImageNode = "/camera/rgb/image_color";
     std::string depthImageNode = "/camera/depth/image_raw";
-    cv::VideoWriter rgbVideo("rgbOut.mp4", CV_FOURCC('M', 'P', '4', '2'), 60, cv::Size(480, 640));
+    cv::VideoWriter rgbVideo("rgbOut.avi", CV_FOURCC('M', 'J', 'P', 'G'), 60, cv::Size(640, 480));
     ros::NodeHandle n;
     imageSub im(n, rgbImageNode, depthImageNode, rgbVideo);
     ros::spin();
