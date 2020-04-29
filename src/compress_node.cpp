@@ -12,7 +12,7 @@
 #include <image_transport/image_transport.h>
 #include <image_transport/subscriber_filter.h>
 #include <message_filters/sync_policies/approximate_time.h>
-
+#include <std_msgs/String.h>
 class imageSub
 {  
     public:
@@ -27,8 +27,6 @@ class imageSub
         cv::Mat image1 = cv_ptr1->image;
         cv_bridge::CvImagePtr cv_ptr2 = cv_bridge::toCvCopy(depthImage, sensor_msgs::image_encodings::TYPE_16UC1);
         cv::Mat image2 = cv_ptr2->image;
-        ROS_INFO("RGB Image: %ld %ld", (long int)image1.rows, (long int)image1.cols);
-        ROS_INFO("Depth Image: %ld %ld", (long int)image2.rows, (long int)image2.cols);
         if(!image1.data)
             ROS_INFO("Incorrect data type for RGB");
         if(!image2.data)
@@ -50,10 +48,19 @@ private:
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "compress_node");
+    ros::NodeHandle n("~");
     std::string rgbImageNode = "/camera/rgb/image_color";
+    n.param<std::string>("/compress_node/video",rgbImageNode, "/camera/rgb/image_color");
     std::string depthImageNode = "/camera/depth/image_raw";
-    cv::VideoWriter rgbVideo("rgbOut.mp4", CV_FOURCC('m', 'p', '4', 'v'), 30, cv::Size(640, 480));
-    ros::NodeHandle n;
+    n.param<std::string>("/compress_node/depth",depthImageNode, "/camera/depth/image_raw");
+    int width;
+    n.param("/compress_node/width", width, 640);
+    int height;
+    n.param("/compress_node/height", height, 480);
+    std::string codec;
+    n.param<std::string>("/compress_node/codec",codec,"MJPG");
+    ROS_INFO("RGB codec: %c%c%c%c", codec[0], codec[1], codec[2], codec[3]);
+    cv::VideoWriter rgbVideo("RGBout.avi", CV_FOURCC(codec[0], codec[1], codec[2], codec[3]), 30, cv::Size(640, 480));
     imageSub im(n, rgbImageNode, depthImageNode, rgbVideo);
     ros::spin();
     rgbVideo.release();
