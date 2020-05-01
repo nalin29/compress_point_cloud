@@ -142,6 +142,10 @@ target_link_libraries(compress_node
     ${OpenCV_LIBS}
     ${catkin_LIBRARIES})
 
+add_executable(broadcast_node src/broadcast_node.cpp)
+target_link_libraries(broadcast_node 
+    ${OpenCV_LIBS}
+    ${catkin_LIBRARIES})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
