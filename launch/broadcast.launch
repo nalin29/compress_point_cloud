@@ -1,0 +1,4 @@
+<launch>
+	<node name="broadcast_node" pkg="final_project" type="broadcast_node" respawn ="false" output ="screen">
+	</node>
+</launch>
