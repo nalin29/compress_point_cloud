@@ -50,7 +50,7 @@ class SyncedDecompressor
 public:
 	SyncedDecompressor(std::string rgbFile, std::string depthFile, CompressBroadcaster cb) : rgbFile_(rgbFile), depthFile_(depthFile), broadcast_(cb), cap_(rgbFile_)
 	{
-		fileArr("test");
+		fileArr(depthFile_);
 		read_ = 0;
 		if (!cap_.isOpened())
 			std::cout << "no video" << std::endl;
@@ -62,10 +62,10 @@ public:
 			cap_ >> frame;
 			if (frame.empty())
 				break;
-			cv::Mat depthFrame;
+			cv::Mat depthFrame(480, 640, CV_32FC1);
 			size_t total = 640 * 480 * depthFrame.elemSize();
 			LZ4F_createDecompressionContext(&dctx_, LZ4F_VERSION);
-			char * decompressDest = decompress(1228800, fileSize_-read_, compressedSrc_+read_);
+			char *decompressDest = decompress(total, fileSize_ - read_, compressedSrc_ + read_);
 			depthFrame = byteToMat(decompressDest);
 			broadcast_.publish(frame, depthFrame);
 			delete decompressDest;
@@ -75,7 +75,8 @@ public:
 		cap_.release();
 		LZ4F_freeDecompressionContext(dctx_);
 	}
-	~SyncedDecompressor(){
+	~SyncedDecompressor()
+	{
 		delete compressedSrc_;
 	}
 	cv::Mat byteToMat(char *arr)
@@ -89,6 +90,8 @@ public:
 	void fileArr(std::string filename)
 	{
 		std::ifstream fl(filename.c_str());
+		if (fl.fail())
+			std::cout << "File not found" << std::endl;
 		fl.seekg(0, std::ios::end);
 		fileSize_ = fl.tellg();
 		compressedSrc_ = new char[fileSize_];
@@ -99,20 +102,21 @@ public:
 	char *decompress(size_t decompressedLeft, size_t compressedTotal, char *compressedSrc)
 	{
 		char *decompressedDest = new char[decompressedLeft];
-		char * decompressedDestTemp = decompressedDest;
+		char *decompressedDestTemp = decompressedDest;
 		size_t bytesRead = compressedTotal;
 		size_t destSize;
 		size_t destSizeTemp = destSize;
 		size_t left = compressedTotal;
 		size_t out;
-		while(out != 0){
-		out = LZ4F_decompress(dctx_, decompressedDestTemp, &destSizeTemp, compressedSrc, &left, NULL);
-		ROS_INFO("out: %Ld, Read: %Ld, Wrote: %Ld", out, left, destSizeTemp);
-		compressedSrc += left;
-		read_+=left;
-		decompressedDestTemp += destSizeTemp;
-		left = out;
-		destSizeTemp = destSize - destSizeTemp;
+		while (out != 0)
+		{
+			out = LZ4F_decompress(dctx_, decompressedDestTemp, &destSizeTemp, compressedSrc, &left, NULL);
+			ROS_INFO("out: %Ld, Read: %Ld, Wrote: %Ld", out, left, destSizeTemp);
+			compressedSrc += left;
+			read_ += left;
+			decompressedDestTemp += destSizeTemp;
+			left = out;
+			destSizeTemp = destSize - destSizeTemp;
 		}
 		return decompressedDest;
 	}
@@ -122,7 +126,7 @@ private:
 	std::string rgbFile_;
 	std::string depthFile_;
 	cv::VideoCapture cap_;
-	char * compressedSrc_;
+	char *compressedSrc_;
 	size_t fileSize_;
 	size_t read_;
 	LZ4F_decompressionContext_t dctx_;
@@ -133,7 +137,7 @@ main(int argc, char **argv)
 	ros::init(argc, argv, "broadcast_node");
 	ros::NodeHandle nh;
 	CompressBroadcaster cb(nh);
-	SyncedDecompressor *sd = new SyncedDecompressor("RGBout.avi", "test", cb);
+	SyncedDecompressor *sd = new SyncedDecompressor("RGBout.avi", "depth_data", cb);
 	delete sd;
 	ros::spin();
 	return 0;

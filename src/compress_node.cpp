@@ -95,7 +95,7 @@ int main(int argc, char **argv)
     n.param<std::string>("/compress_node/codec", codec, "MJPG");
     ROS_INFO("RGB codec: %c%c%c%c", codec[0], codec[1], codec[2], codec[3]);
     static cv::VideoWriter rgbVideo("RGBout.avi", cv::VideoWriter::fourcc(codec[0], codec[1], codec[2], codec[3]), 30, cv::Size(640, 480));
-    FILE *fp = fopen("test", "w+");
+    FILE *fp = fopen("depth_data", "w+");
     imageSub im(n, rgbImageNode, depthImageNode, rgbVideo, fp);
     ros::spin();
     rgbVideo.release();
