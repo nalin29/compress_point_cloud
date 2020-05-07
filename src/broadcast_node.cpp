@@ -82,8 +82,8 @@ public:
 	cv::Mat byteToMat(char *arr)
 	{
 		cv::Mat test(480, 640, CV_32FC1, arr, cv::Mat::AUTO_STEP);
-		cv::imshow("test", test);
-		cv::waitKey(10);
+		//cv::imshow("test", test);
+		//cv::waitKey(10);
 		return test;
 	}
 
