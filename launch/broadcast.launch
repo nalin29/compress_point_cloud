@@ -1,6 +1,8 @@
 <launch>
 	<node name="broadcast_node" pkg="final_project" type="broadcast_node" respawn ="false" output ="screen">
 	</node>
+	<node name="VidRec" pkg="final_project" type="VidRec" respawn ="false" output ="screen">
+	</node>
 	 <group ns="camera">
         <node pkg="nodelet" type="nodelet" args="manager" name="standalone_nodelet" output="screen"/>
         <node pkg="nodelet" type="nodelet" name="depth_image_proc"

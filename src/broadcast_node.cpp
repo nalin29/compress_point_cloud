@@ -111,7 +111,7 @@ public:
 		while (out != 0)
 		{
 			out = LZ4F_decompress(dctx_, decompressedDestTemp, &destSizeTemp, compressedSrc, &left, NULL);
-			ROS_INFO("out: %Ld, Read: %Ld, Wrote: %Ld", out, left, destSizeTemp);
+			//ROS_INFO("out: %Ld, Read: %Ld, Wrote: %Ld", out, left, destSizeTemp);
 			compressedSrc += left;
 			read_ += left;
 			decompressedDestTemp += destSizeTemp;

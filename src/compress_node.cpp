@@ -62,7 +62,7 @@ public:
         maxDest_size = LZ4F_compressFrameBound(srcSize, NULL);
         dest = new char[maxDest_size];
         size_t out = LZ4F_compressFrame(dest, maxDest_size, srcArr, srcSize, NULL);
-        ROS_INFO("Size total: %Ld", srcSize);
+        //ROS_INFO("Size total: %Ld", srcSize);
         fwrite(dest, 1, out, fp);
         delete(dest);
     }

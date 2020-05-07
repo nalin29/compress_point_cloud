@@ -1,9 +1,9 @@
 #include "ros/ros.h"
-
+#include "sensor_msgs/PointCloud2.h"
 /**
  * This tutorial demonstrates simple receipt of messages over the ROS system.
  */
-void callback(const std_msgs::String::ConstPtr& msg)
+void callback(const sensor_msgs::PointCloud2ConstPtr& test)
 {
   ROS_INFO("recieved output");
 }
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
    * is the number of messages that will be buffered up before beginning to throw
    * away the oldest ones.
    */
-  ros::Subscriber sub = n.subscribe("/white_lines/PointCloud2", 1000, callback);
+  ros::Subscriber sub = n.subscribe("/camera/depth_registered/points", 1000, callback);
 
   /**
    * ros::spin() will enter a loop, pumping callbacks.  With this version, all
