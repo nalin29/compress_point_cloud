@@ -2,8 +2,17 @@
 	<node name="broadcast_node" pkg="final_project" type="broadcast_node" respawn ="false" output ="screen">
 	</node>
 	 <group ns="camera">
-        <node pkg="nodelet" type="nodelet" name="standalone_nodelet"  args="manager"/>
-        <node pkg="nodelet" type="nodelet" name="depth_image_proc" args="load depth_image_proc/point_cloud_xyzrgb standalone_nodelet" output="screen">
+	 	<arg name="rgb_camera_info"     value="/camera/color/camera_info"/>
+        <arg name="rgb_rimg_ect"        value="/processed_color"/>  <!--Rectified color image-->
+        <arg name="depReg_imgrect"      value="/processed_depth"/>  <!--Rectified depth image-->
+        <arg name="out_cloud"           value="/white_lines"/>
+        <node pkg="nodelet" type="nodelet" args="manager" name="standalone_nodelet" output="screen"/>
+        <node pkg="nodelet" type="nodelet" name="depth_image_proc"
+            args="load depth_image_proc/point_cloud_xyzrgb standalone_nodelet" output="screen">
+            <remap from="rgb/camera_info"               to="/camera/color/camera_info" />
+            <remap from="rgb/image_rect_color"          to="$(arg rgb_rimg_ect)"/>
+            <remap from="depth_registered/image_rect"   to="$(arg depReg_imgrect)"/>
+            <remap from="depth_registered/points"       to="$(arg out_cloud)"/>
         </node>
       </group>
 </launch>
