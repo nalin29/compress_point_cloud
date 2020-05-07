@@ -44,7 +44,7 @@ int main(int argc, char **argv)
    * is the number of messages that will be buffered up before beginning to throw
    * away the oldest ones.
    */
-  ros::Subscriber sub = n.subscribe("/camera/depth_registered/points", 1000, callback);
+  ros::Subscriber sub = n.subscribe("/camera/depth_registered2/points", 1000, callback);
 
   /**
    * ros::spin() will enter a loop, pumping callbacks.  With this version, all

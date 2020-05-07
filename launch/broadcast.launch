@@ -1,5 +1,5 @@
 <launch>
-	<node name="broadcast_node" pkg="final_project" type="broadcast_node" respawn ="false" output ="screen">
+<node name="broadcast_node" pkg="final_project" type="broadcast_node" respawn ="false" output ="screen">
 	</node>
 	<node name="VidRec" pkg="final_project" type="VidRec" respawn ="false" output ="screen">
 	</node>
@@ -10,7 +10,7 @@
             <remap from="rgb/camera_info"               to="/camera/rgb/camera_info" />
             <remap from="rgb/image_rect_color"          to="/camera/rgb/image_rect_color"/>
             <remap from="depth_registered/image_rect"   to="/camera/depth_registered/sw_registered/image_rect"/>
-            <remap from="depth_registered/points"       to="/camera/depth_registered/points"/>
+            <remap from="depth_registered/points"       to="/camera/depth/points"/>
         </node>
       </group>
 </launch>
