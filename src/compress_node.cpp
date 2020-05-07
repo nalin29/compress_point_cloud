@@ -31,7 +31,7 @@ public:
         cv::Mat rgb = cv_ptr1->image;
         cv_bridge::CvImagePtr cv_ptr2 = cv_bridge::toCvCopy(depthImage, sensor_msgs::image_encodings::TYPE_32FC1);
         cv::Mat depth = cv_ptr2->image;
-        cv::imshow("depth", depth);
+        //cv::imshow("depth", depth);
         if (!rgb.data)
             ROS_INFO("Incorrect data type for RGB");
         if (!depth.data)
@@ -52,8 +52,8 @@ public:
     void byteToMat(char *arr)
     {
         cv::Mat test(480, 640, CV_32FC1, arr, cv::Mat::AUTO_STEP);
-        cv::imshow("test", test);
-        cv::waitKey(1);
+        //cv::imshow("test", test);
+        //cv::waitKey(1);
     }
     void compressDepth(cv::Mat mat, FILE *fp){
         std::vector<float> srcVec = matToByte(mat);
@@ -84,9 +84,9 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "compress_node");
     ros::NodeHandle n("~");
     std::string rgbImageNode = "/camera/rgb/image_color";
-    n.param<std::string>("/compress_node/video", rgbImageNode, "/camera/rgb/image_color");
-    std::string depthImageNode = "/camera/depth/image_raw";
-    n.param<std::string>("/compress_node/depth", depthImageNode, "/camera/depth/image");
+    n.param<std::string>("/compress_node/video", rgbImageNode, "/camera/rgb/image_rect_color");
+    std::string depthImageNode = "/camera/depth/image";
+    n.param<std::string>("/compress_node/depth", depthImageNode, "/camera/depth_registered/sw_registered/image_rect");
     int width;
     n.param("/compress_node/width", width, 640);
     int height;
