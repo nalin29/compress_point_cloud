@@ -25,8 +25,8 @@ class CompressBroadcaster
 public:
 	CompressBroadcaster(ros::NodeHandle nh) : it(nh)
 	{
-		rgbVideo = it.advertise("/camera/depth/image_rect", 1);
-		depthVideo = it.advertise("/camera/depth_registered/image_rect", 1);
+		rgbVideo = it.advertise("/camera/rgb/image_rect_color", 1);
+		depthVideo = it.advertise("/camera/depth_registered/sw_registered/image_rect", 1);
 	}
 	void publish(cv::Mat rgbImage, cv::Mat depthImage)
 	{
