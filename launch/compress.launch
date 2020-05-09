@@ -3,9 +3,10 @@
 	<arg name="depth_topic" default="/camera/depth/image_raw"/>
 	<arg name="frame_width" default="640"/>
 	<arg name="frame_height" default="480"/>
-	<arg name="video_codec" default="h264"/>
+	<arg name="video_codec" default="FFV1"/>
 	<arg name="rgb" default="RGBout.avi"/>
 	<arg name="depth" default="depth_data"/>
+	<arg name="frames" default="30"/>
 	<node name="compress_node" pkg="final_project" type="compress_node" respawn ="false" output ="screen">
 		<param name="video" value="$(arg video_topic)" type="string"/>
 		<param name="depth" value="$(arg depth_topic)" type="string"/>
@@ -14,5 +15,6 @@
 		<param name="codec" value="$(arg video_codec)" type="str"/>
 		<param name="rgb_file" value="$(arg rgb)" type="string"/>
 		<param name="depth_file" value="$(arg depth)" type="string"/>
+		<param name="fps" value="$(arg frames)" type="int"/>
 	</node>
 </launch>

@@ -35,6 +35,7 @@ public:
         if (!depth.data)
             ROS_INFO("Incorrect data type for depth");
         rgbVideo.write(rgb);
+        //cv::imshow("depth orig", depth);
         compressDepth(depth, fp);
     }
     std::vector<float> matToByte(cv::Mat mat)
@@ -50,13 +51,14 @@ public:
     void byteToMat(char *arr)
     {
         cv::Mat test(480, 640, CV_32FC1, arr, cv::Mat::AUTO_STEP);
-        //cv::imshow("test", test);
-        //cv::waitKey(1);
+        cv::imshow("test", test);
+        cv::waitKey(1);
     }
     void compressDepth(cv::Mat mat, FILE *fp){
         std::vector<float> srcVec = matToByte(mat);
-        size_t srcSize = srcVec.size() * sizeof(float);
+        size_t srcSize = mat.rows*mat.cols*mat.elemSize();
         char *srcArr = (char *)&srcVec[0];
+        //byteToMat(srcArr);
         maxDest_size = LZ4F_compressFrameBound(srcSize, NULL);
         dest = new char[maxDest_size];
         size_t out = LZ4F_compressFrame(dest, maxDest_size, srcArr, srcSize, NULL);

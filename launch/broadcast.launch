@@ -9,16 +9,7 @@
     <param name="rgb_file" value="$(arg rgb)" type="string"/>
     <param name="depth_file" value="$(arg depth)" type="string"/>
   </node>
-  <group ns="camera">
-    <node pkg="nodelet" type="nodelet" args="manager" name="standalone_nodelet" output="screen"/>
-    <node pkg="nodelet" type="nodelet" name="depth_image_proc" args="load depth_image_proc/point_cloud_xyzrgb standalone_nodelet" output="screen">
-      <remap from="rgb/camera_info" to="/camera/rgb/camera_info" />
-      <remap from="rgb/image_rect_color" to="/camera/rgb/image_rect_color"/>
-      <remap from="depth_registered/image_rect" to="/camera/depth_registered/sw_registered/image_rect"/>
-      <remap from="depth_registered/points" to="/camera/depth_registered/points"/>
-      <param name="queue_size" value="5"/>
-    </node>
-  </group>
+  <node name="pointCloud_node" pkg="final_project" type="pointCloud_node" respawn="false" output="screen"/>
   <node name="camera_info" pkg="rostopic" type="rostopic" args="pub /camera/rgb/camera_info sensor_msgs/CameraInfo
  '{header: {seq: 0, stamp: {secs: 0, nsecs: 0}, frame_id: 'camera_rgb_optical_frame'},
   height: 480, width: 640, distortion_model: 'plumb_bob',

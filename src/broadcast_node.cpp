@@ -57,7 +57,7 @@ public:
 		if (!cap_.isOpened())
 			std::cout << "no video" << std::endl;
 		// runs at rate of 30hz
-		ros::Rate rate(fps);
+		ros::Rate rate(cap_.get(CV_CAP_PROP_FPS));
 		while (cap_.isOpened())
 		{
 			cv::Mat frame;
@@ -84,8 +84,8 @@ public:
 	cv::Mat byteToMat(char *arr)
 	{
 		cv::Mat test(height, width, CV_32FC1, arr, cv::Mat::AUTO_STEP);
-		//cv::imshow("test", test);
-		//cv::waitKey(10);
+		//cv::imshow("testDecompressed", test);
+		//cv::waitKey(11);
 		return test;
 	}
 

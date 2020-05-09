@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   roslz4
   message_filters
+  image_geometry
 )
 
 ## System dependencies are found with CMake's conventions
@@ -146,6 +147,11 @@ target_link_libraries(compress_node
 
 add_executable(broadcast_node src/broadcast_node.cpp)
 target_link_libraries(broadcast_node 
+    ${OpenCV_LIBS}
+    ${catkin_LIBRARIES})
+
+add_executable(pointCloud_node src/pointCloud_node.cpp)
+target_link_libraries(pointCloud_node 
     ${OpenCV_LIBS}
     ${catkin_LIBRARIES})
 
