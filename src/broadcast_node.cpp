@@ -34,6 +34,7 @@ public:
 		cv_bridge::CvImage out_msg;
 		out_msg.header = std_msgs::Header();
 		out_msg.header.frame_id = "camera_rgb_optical_frame";
+		//out_msg.header.stamp = ros::Time::now();
 		out_msg.encoding = sensor_msgs::image_encodings::BGR8;
 		out_msg.image = compressImage;
 
@@ -41,6 +42,7 @@ public:
 		cv_bridge::CvImage outDepth_msg;
 		outDepth_msg.header = std_msgs::Header();
 		outDepth_msg.header.frame_id = "camera_rgb_optical_frame";
+		//outDepth_msg.header.stamp = ros::Time::now();
 		outDepth_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
 		outDepth_msg.image = compressDepthImage;
 		rgbVideo.publish(out_msg.toImageMsg());
