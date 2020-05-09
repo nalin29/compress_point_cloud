@@ -4,7 +4,6 @@
 #include <message_filters/time_synchronizer.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
-#include <tf/tfMessage.h>
 #include <iostream>
 #include <fstream>
 #include <opencv2/highgui/highgui.hpp>
@@ -15,7 +14,6 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <std_msgs/String.h>
 #include <lz4frame.h>
-#include <string>
 class CompressBroadcaster
 {
 	image_transport::ImageTransport it;

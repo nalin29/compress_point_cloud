@@ -4,7 +4,6 @@
 #include <message_filters/time_synchronizer.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
-#include <tf/tfMessage.h>
 #include <iostream>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -13,7 +12,6 @@
 #include <image_transport/subscriber_filter.h>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <std_msgs/String.h>
-#include "boost/date_time/posix_time/posix_time.hpp"
 #include <opencv2/imgcodecs.hpp>
 #include <lz4frame.h>
 class imageSub
