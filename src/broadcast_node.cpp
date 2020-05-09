@@ -21,12 +21,13 @@ class CompressBroadcaster
 	image_transport::ImageTransport it;
 	image_transport::Publisher rgbVideo;
 	image_transport::Publisher depthVideo;
-
+	ros::Publisher cameraInfo;
 public:
 	CompressBroadcaster(ros::NodeHandle nh) : it(nh)
 	{
 		rgbVideo = it.advertise("/camera/rgb/image_rect_color", 1);
 		depthVideo = it.advertise("/camera/depth_registered/sw_registered/image_rect", 1);
+		cameraInfo = nh.advertise<sensor_msgs::CameraInfo>("/camera/rgb/camera_info", 1);
 	}
 	void publish(cv::Mat rgbImage, cv::Mat depthImage)
 	{
@@ -34,7 +35,7 @@ public:
 		cv_bridge::CvImage out_msg;
 		out_msg.header = std_msgs::Header();
 		out_msg.header.frame_id = "camera_rgb_optical_frame";
-		//out_msg.header.stamp = ros::Time::now();
+		out_msg.header.stamp = ros::Time::now();
 		out_msg.encoding = sensor_msgs::image_encodings::BGR8;
 		out_msg.image = compressImage;
 
@@ -42,11 +43,35 @@ public:
 		cv_bridge::CvImage outDepth_msg;
 		outDepth_msg.header = std_msgs::Header();
 		outDepth_msg.header.frame_id = "camera_rgb_optical_frame";
-		//outDepth_msg.header.stamp = ros::Time::now();
+		outDepth_msg.header.stamp = ros::Time::now();
 		outDepth_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
 		outDepth_msg.image = compressDepthImage;
+
+		sensor_msgs::CameraInfo camInfo;
+		camInfo.header.frame_id = "camera_rgb_optical_frame";
+		camInfo.header.stamp = ros::Time::now();
+		camInfo.height = 480;
+		camInfo.width = 640;
+		camInfo.distortion_model = "plumb_bob";
+		double dArr[] = {0,0,0,0,0};
+		std::vector<double> d(dArr, dArr+5);
+		camInfo.D = d;
+		boost::array<double, 9UL> k = {525.0, 0.0, 319.5, 0.0, 525.0, 239.5, 0.0, 0.0, 1.0};
+		camInfo.K = k;
+		boost::array<double, 9UL> r = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
+		camInfo.R = r;
+		boost::array<double, 12UL> p = {525.0, 0.0, 319.5, 0.0, 0.0, 525.0, 239.5, 0.0, 0.0, 0.0, 1.0, 0.0};
+		camInfo.P = p;
+		camInfo.binning_x = 0;
+		camInfo.binning_y = 0;
+		camInfo.roi.x_offset = 0;
+		camInfo.roi.y_offset = 0;
+		camInfo.roi.height = 0;
+		camInfo.roi.width = 0;
+		camInfo.roi.do_rectify = false;
 		rgbVideo.publish(out_msg.toImageMsg());
 		depthVideo.publish(outDepth_msg.toImageMsg());
+		cameraInfo.publish(camInfo);
 	}
 };
 class SyncedDecompressor
