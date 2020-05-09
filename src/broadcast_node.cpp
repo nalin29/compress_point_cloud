@@ -21,6 +21,7 @@ class CompressBroadcaster
 	image_transport::ImageTransport it;
 	image_transport::Publisher rgbVideo;
 	image_transport::Publisher depthVideo;
+
 public:
 	CompressBroadcaster(ros::NodeHandle nh) : it(nh)
 	{
@@ -51,22 +52,22 @@ public:
 class SyncedDecompressor
 {
 public:
-	SyncedDecompressor(std::string rgbFile, std::string depthFile, CompressBroadcaster cb) : rgbFile_(rgbFile), depthFile_(depthFile), broadcast_(cb), cap_(rgbFile_)
+	SyncedDecompressor(std::string rgbFile, std::string depthFile, int w, int h, int frames, CompressBroadcaster cb) : rgbFile_(rgbFile), depthFile_(depthFile), broadcast_(cb), cap_(rgbFile_), width(w), height(h), fps(frames)
 	{
 		fileArr(depthFile_);
 		read_ = 0;
 		if (!cap_.isOpened())
 			std::cout << "no video" << std::endl;
 		// runs at rate of 30hz
-		ros::Rate rate(30.0);
+		ros::Rate rate(fps);
 		while (cap_.isOpened())
 		{
 			cv::Mat frame;
 			cap_ >> frame;
 			if (frame.empty())
 				break;
-			cv::Mat depthFrame(480, 640, CV_32FC1);
-			size_t total = 640 * 480 * depthFrame.elemSize();
+			cv::Mat depthFrame(height, width, CV_32FC1);
+			size_t total = width * height * depthFrame.elemSize();
 			LZ4F_createDecompressionContext(&dctx_, LZ4F_VERSION);
 			char *decompressDest = decompress(total, fileSize_ - read_, compressedSrc_ + read_);
 			depthFrame = byteToMat(decompressDest);
@@ -84,7 +85,7 @@ public:
 	}
 	cv::Mat byteToMat(char *arr)
 	{
-		cv::Mat test(480, 640, CV_32FC1, arr, cv::Mat::AUTO_STEP);
+		cv::Mat test(height, width, CV_32FC1, arr, cv::Mat::AUTO_STEP);
 		//cv::imshow("test", test);
 		//cv::waitKey(10);
 		return test;
@@ -133,14 +134,29 @@ private:
 	size_t fileSize_;
 	size_t read_;
 	LZ4F_decompressionContext_t dctx_;
+	int width;
+	int height;
+	int fps;
 };
 
 main(int argc, char **argv)
 {
 	ros::init(argc, argv, "broadcast_node");
 	ros::NodeHandle nh;
+	std::string rgbFile;
+	std::string depthFile;
+	int fps;
+	int width;
+	int height;
+	nh.param<std::string>("/broadcast_node/rgb_file", rgbFile, "RGBout.avi");
+	nh.param<std::string>("/broadcast_node/depth_file", depthFile, "depth_data");
+	nh.param<int>("/broadcast_node/fps", fps, 30);
+	nh.param<int>("/broadcast_node/width", width, 640);
+	nh.param<int>("/broadcast_node/height", height, 480);
+	ROS_INFO("RGB File: %s", rgbFile.c_str());
+	ROS_INFO("Depth File: %s", depthFile.c_str());
 	CompressBroadcaster cb(nh);
-	SyncedDecompressor *sd = new SyncedDecompressor("RGBout.avi", "depth_data", cb);
+	SyncedDecompressor *sd = new SyncedDecompressor(rgbFile.c_str(), depthFile.c_str(), width, height, fps, cb);
 	delete sd;
 	ros::spin();
 	return 0;
