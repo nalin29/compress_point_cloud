@@ -14,6 +14,7 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <std_msgs/String.h>
 #include <lz4frame.h>
+// broadcasts data to relevant topics
 class CompressBroadcaster
 {
 	image_transport::ImageTransport it;
@@ -28,14 +29,16 @@ public:
 	}
 	void publish(cv::Mat rgbImage, cv::Mat depthImage)
 	{
-		cv::Mat compressImage = rgbImage;
-		cv_bridge::CvImage out_msg;
-		out_msg.header = std_msgs::Header();
-		out_msg.header.frame_id = "camera_rgb_optical_frame";
+		// create rgb image from opencv mar
+		cv::Mat decompressedRGB = rgbImage;
+		cv_bridge::CvImage outRGB_msg;
+		outRGB_msg.header = std_msgs::Header();
+		outRGB_msg.header.frame_id = "camera_rgb_optical_frame";
 		//out_msg.header.stamp = ros::Time::now();
-		out_msg.encoding = sensor_msgs::image_encodings::BGR8;
-		out_msg.image = compressImage;
+		outRGB_msg.encoding = sensor_msgs::image_encodings::BGR8;
+		outRGB_msg.image = decompressedRGB;
 
+		//create depth image form opencv mat
 		cv::Mat compressDepthImage = depthImage;
 		cv_bridge::CvImage outDepth_msg;
 		outDepth_msg.header = std_msgs::Header();
@@ -43,52 +46,63 @@ public:
 		//outDepth_msg.header.stamp = ros::Time::now();
 		outDepth_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
 		outDepth_msg.image = compressDepthImage;
-		rgbVideo.publish(out_msg.toImageMsg());
+		// publish images
+		rgbVideo.publish(outRGB_msg.toImageMsg());
 		depthVideo.publish(outDepth_msg.toImageMsg());
 	}
 };
+// decompresses frame by frame syncing rgb and depth data
 class SyncedDecompressor
 {
 public:
 	SyncedDecompressor(std::string rgbFile, std::string depthFile, int w, int h, int frames, CompressBroadcaster cb) : rgbFile_(rgbFile), depthFile_(depthFile), broadcast_(cb), cap_(rgbFile_), width(w), height(h), fps(frames)
 	{
+		// set up to decompress data
 		fileArr(depthFile_);
 		read_ = 0;
+		// check to ensure rgb video exists
 		if (!cap_.isOpened())
 			std::cout << "no video" << std::endl;
-		// runs at rate of 30hz
+		// ensure loop runs at rate of of rgb video
 		ros::Rate rate(cap_.get(CV_CAP_PROP_FPS));
 		while (cap_.isOpened())
 		{
-			cv::Mat frame;
-			cap_ >> frame;
-			if (frame.empty())
+			// get one frame from rgb video decompressed
+			cv::Mat rgbFrame;
+			cap_ >> rgbFrame;
+			// end loop if at end of video
+			if (rgbFrame.empty())
 				break;
+			// decompress total bytes and generate matrix from lz4 file
 			cv::Mat depthFrame(height, width, CV_32FC1);
 			size_t total = width * height * depthFrame.elemSize();
 			LZ4F_createDecompressionContext(&dctx_, LZ4F_VERSION);
+			// hand bytes to read and pointer to next frame of data
 			char *decompressDest = decompress(total, fileSize_ - read_, compressedSrc_ + read_);
 			depthFrame = byteToMat(decompressDest);
-			broadcast_.publish(frame, depthFrame);
+			// publish the two images decompressed at same time
+			broadcast_.publish(rgbFrame, depthFrame);
+			// delete temp array of bytes
 			delete decompressDest;
-			// wait for 30hz rate
+			// wait for refresh rate
 			rate.sleep();
 		}
+		// free utlities and end
 		cap_.release();
 		LZ4F_freeDecompressionContext(dctx_);
 	}
+	// free the array containing file data on destruction
 	~SyncedDecompressor()
 	{
 		delete compressedSrc_;
 	}
+	// convert byte array into matric of of type 32cf1
 	cv::Mat byteToMat(char *arr)
 	{
 		cv::Mat test(height, width, CV_32FC1, arr, cv::Mat::AUTO_STEP);
-		//cv::imshow("testDecompressed", test);
-		//cv::waitKey(11);
 		return test;
 	}
-
+	// puts file contents into a byte array
 	void fileArr(std::string filename)
 	{
 		std::ifstream fl(filename.c_str());
@@ -101,8 +115,10 @@ public:
 		fl.read(compressedSrc_, fileSize_);
 		fl.close();
 	}
+	// decompresses data from lz4 format
 	char *decompress(size_t decompressedLeft, size_t compressedTotal, char *compressedSrc)
 	{
+		// create init variables
 		char *decompressedDest = new char[decompressedLeft];
 		char *decompressedDestTemp = decompressedDest;
 		size_t bytesRead = compressedTotal;
@@ -110,16 +126,27 @@ public:
 		size_t destSizeTemp = destSize;
 		size_t left = compressedTotal;
 		size_t out;
+		// loops until frame is decompressed out = 0, out refers to as the hint to the number of bytes left to decompress frame
 		while (out != 0)
 		{
+			// decompress at max left bytes into destTemp of size destSizeTemp
+			// decompressDestTemp pointer to the array of bytes decompressed
+			// destSizeTemp tells the number of bytes left in dest array, and is changed by decompress to bytes written
+			// compressedSrc is the pointer to the currect byte to be decompressed from
+			// left is the bytes to try and decompress in order to write destSizeTemp bytes, decompress changes this to bytes read
 			out = LZ4F_decompress(dctx_, decompressedDestTemp, &destSizeTemp, compressedSrc, &left, NULL);
-			//ROS_INFO("out: %Ld, Read: %Ld, Wrote: %Ld", out, left, destSizeTemp);
+			// advance pointer to next bytes after reading left bytes
 			compressedSrc += left;
+			// take count of total bytes read in object
 			read_ += left;
+			// advance pointer in dest array
 			decompressedDestTemp += destSizeTemp;
+			// insert hint in out bytes to read next
 			left = out;
+			// decrease space availiable in dest array
 			destSizeTemp = destSize - destSizeTemp;
 		}
+		// return pointer to start of array with decompressed bytes
 		return decompressedDest;
 	}
 
@@ -139,8 +166,10 @@ private:
 
 main(int argc, char **argv)
 {
+	// note expects static cam_info with ros time of 0 init in launch file
 	ros::init(argc, argv, "broadcast_node");
 	ros::NodeHandle nh;
+	// parameter handling
 	std::string rgbFile;
 	std::string depthFile;
 	int fps;
@@ -151,10 +180,14 @@ main(int argc, char **argv)
 	nh.param<int>("/broadcast_node/fps", fps, 30);
 	nh.param<int>("/broadcast_node/width", width, 640);
 	nh.param<int>("/broadcast_node/height", height, 480);
+	// debug data
 	ROS_INFO("RGB File: %s", rgbFile.c_str());
 	ROS_INFO("Depth File: %s", depthFile.c_str());
+	// create broadcaster
 	CompressBroadcaster cb(nh);
+	// create decompressor that syncs both depth and rgb data and sends decompressed data to broadcaster
 	SyncedDecompressor *sd = new SyncedDecompressor(rgbFile.c_str(), depthFile.c_str(), width, height, fps, cb);
+	// free space
 	delete sd;
 	ros::spin();
 	return 0;
