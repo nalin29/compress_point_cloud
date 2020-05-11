@@ -14,13 +14,14 @@
 #include <std_msgs/String.h>
 #include <opencv2/imgcodecs.hpp>
 #include <lz4frame.h>
-class pointCloudBroadcaster
+// compresses data in synced format
+class SyncedCompressor
 {
 public:
-    pointCloudBroadcaster(ros::NodeHandle n, std::string &t1, std::string &t2, cv::VideoWriter rgbVid, FILE *f) : it_(n), rgb_image(it_, t1, 1), depth_image(it_, t2, 1), sync(MySyncPolicy(10), rgb_image, depth_image), rgbVideo(rgbVid), fp(f)
+    SyncedCompressor(ros::NodeHandle n, std::string &t1, std::string &t2, cv::VideoWriter rgbVid, FILE *f) : it_(n), rgb_image(it_, t1, 1), depth_image(it_, t2, 1), sync(MySyncPolicy(10), rgb_image, depth_image), rgbVideo(rgbVid), fp(f)
     {
         // sync using syncpolicy and call callback for compression
-        sync.registerCallback(boost::bind(&pointCloudBroadcaster::callback, this, _1, _2));
+        sync.registerCallback(boost::bind(&SyncedCompressor::callback, this, _1, _2));
     }
     // compresses and writes data
     void callback(const sensor_msgs::ImageConstPtr &rgbImage, const sensor_msgs::ImageConstPtr &depthImage)
@@ -116,7 +117,7 @@ int main(int argc, char **argv)
     // open a file to write lz4 compressed data to
     FILE *fp = fopen(depthFile.c_str(), "w+");
     // run synced image subsrciber
-    pointCloudBroadcaster im(n, rgbImageNode, depthImageNode, rgbVideo, fp);
+    SyncedCompressor im(n, rgbImageNode, depthImageNode, rgbVideo, fp);
     ros::spin();
     // release buffers
     rgbVideo.release();
