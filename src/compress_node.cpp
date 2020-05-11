@@ -101,7 +101,7 @@ int main(int argc, char **argv)
     int height;
     n.param("/compress_node/height", height, 480);
     std::string codec;
-    n.param<std::string>("/compress_node/codec", codec, "MJPG");
+    n.param<std::string>("/compress_node/codec", codec, "FFV1");
     int fps;
     n.param<int>("/compress_node/fps", fps, 30);
     std::string rgbFile;
