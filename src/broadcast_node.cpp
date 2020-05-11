@@ -34,7 +34,7 @@ public:
 		cv_bridge::CvImage outRGB_msg;
 		outRGB_msg.header = std_msgs::Header();
 		outRGB_msg.header.frame_id = "camera_rgb_optical_frame";
-		//out_msg.header.stamp = ros::Time::now();
+
 		outRGB_msg.encoding = sensor_msgs::image_encodings::BGR8;
 		outRGB_msg.image = decompressedRGB;
 
@@ -43,10 +43,13 @@ public:
 		cv_bridge::CvImage outDepth_msg;
 		outDepth_msg.header = std_msgs::Header();
 		outDepth_msg.header.frame_id = "camera_rgb_optical_frame";
-		//outDepth_msg.header.stamp = ros::Time::now();
 		outDepth_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
 		outDepth_msg.image = compressDepthImage;
-		// publish images
+
+		// publish images with same time stamps
+		ros::Time cur = ros::Time::now();
+		outDepth_msg.header.stamp = cur;
+		outRGB_msg.header.stamp = cur;
 		rgbVideo.publish(outRGB_msg.toImageMsg());
 		depthVideo.publish(outDepth_msg.toImageMsg());
 	}
@@ -58,8 +61,11 @@ public:
 	SyncedDecompressor(std::string rgbFile, std::string depthFile, int w, int h, int frames, CompressBroadcaster cb) : rgbFile_(rgbFile), depthFile_(depthFile), broadcast_(cb), cap_(rgbFile_), width(w), height(h), fps(frames)
 	{
 		// set up to decompress data
-		fileArr(depthFile_);
+		std::ifstream *fl = fileStream(depthFile_);
 		read_ = 0;
+		compressedSrcOrig_ = new char[100];
+		compressedSrc_ = compressedSrcOrig_;
+		inputBufSize = 0;
 		// check to ensure rgb video exists
 		if (!cap_.isOpened())
 			std::cout << "no video" << std::endl;
@@ -78,7 +84,7 @@ public:
 			size_t total = width * height * depthFrame.elemSize();
 			LZ4F_createDecompressionContext(&dctx_, LZ4F_VERSION);
 			// hand bytes to read and pointer to next frame of data
-			char *decompressDest = decompress(total, fileSize_ - read_, compressedSrc_ + read_);
+			char *decompressDest = decompress(total, fl);
 			depthFrame = byteToMat(decompressDest);
 			// publish the two images decompressed at same time
 			broadcast_.publish(rgbFrame, depthFrame);
@@ -89,12 +95,10 @@ public:
 		}
 		// free utlities and end
 		cap_.release();
+		fl->close();
+		delete fl;
+		delete compressedSrcOrig_;
 		LZ4F_freeDecompressionContext(dctx_);
-	}
-	// free the array containing file data on destruction
-	~SyncedDecompressor()
-	{
-		delete compressedSrc_;
 	}
 	// convert byte array into matric of of type 32cf1
 	cv::Mat byteToMat(char *arr)
@@ -102,47 +106,68 @@ public:
 		cv::Mat test(height, width, CV_32FC1, arr, cv::Mat::AUTO_STEP);
 		return test;
 	}
-	// puts file contents into a byte array
-	void fileArr(std::string filename)
+	// gets size of file and creates file stream
+	std::ifstream *fileStream(std::string filename)
 	{
-		std::ifstream fl(filename.c_str());
-		if (fl.fail())
+		std::ifstream *fl = new std::ifstream(filename.c_str());
+		if (fl->fail())
 			std::cout << "File not found" << std::endl;
-		fl.seekg(0, std::ios::end);
-		fileSize_ = fl.tellg();
-		compressedSrc_ = new char[fileSize_];
-		fl.seekg(0, std::ios::beg);
-		fl.read(compressedSrc_, fileSize_);
-		fl.close();
+		fl->seekg(0, std::ios::end);
+		fileSize_ = fl->tellg();
+		fl->seekg(0, std::ios::beg);
+		return fl;
 	}
 	// decompresses data from lz4 format
-	char *decompress(size_t decompressedLeft, size_t compressedTotal, char *compressedSrc)
+	char *decompress(size_t decompressedLeft, std::ifstream *fl)
 	{
 		// create init variables
 		char *decompressedDest = new char[decompressedLeft];
 		char *decompressedDestTemp = decompressedDest;
-		size_t bytesRead = compressedTotal;
+		size_t bytesRead = decompressedLeft;
 		size_t destSize;
 		size_t destSizeTemp = destSize;
-		size_t left = compressedTotal;
-		size_t out;
+		size_t left = 15;
+		size_t out = left;
 		// loops until frame is decompressed out = 0, out refers to as the hint to the number of bytes left to decompress frame
 		while (out != 0)
 		{
+			// if we need more bytes from file, reached end of array, read decompressedLeft bytes in or until end
+			if (inputBufSize == 0)
+			{
+				delete (compressedSrcOrig_);
+				compressedSrcOrig_ = new char[decompressedLeft];
+				compressedSrc_ = compressedSrcOrig_;
+				if (read_ + decompressedLeft <= fileSize_)
+				{
+					fl->read(compressedSrc_, decompressedLeft);
+					inputBufSize = decompressedLeft;
+				}
+				else
+				{
+					fl->read(compressedSrc_, fileSize_ - read_);
+					ROS_INFO("end");
+					inputBufSize = fileSize_ - read_;
+				}
+			}
 			// decompress at max left bytes into destTemp of size destSizeTemp
 			// decompressDestTemp pointer to the array of bytes decompressed
 			// destSizeTemp tells the number of bytes left in dest array, and is changed by decompress to bytes written
 			// compressedSrc is the pointer to the currect byte to be decompressed from
 			// left is the bytes to try and decompress in order to write destSizeTemp bytes, decompress changes this to bytes read
-			out = LZ4F_decompress(dctx_, decompressedDestTemp, &destSizeTemp, compressedSrc, &left, NULL);
+			out = LZ4F_decompress(dctx_, decompressedDestTemp, &destSizeTemp, compressedSrc_, &left, NULL);
 			// advance pointer to next bytes after reading left bytes
-			compressedSrc += left;
+			compressedSrc_ += left;
+			//reduce size remaining in arr
+			inputBufSize -= left;
 			// take count of total bytes read in object
 			read_ += left;
 			// advance pointer in dest array
 			decompressedDestTemp += destSizeTemp;
 			// insert hint in out bytes to read next
 			left = out;
+			// if hint > size then next loop will read till only the end then more bytes will be fetched
+			if (left > inputBufSize)
+				left = inputBufSize;
 			// decrease space availiable in dest array
 			destSizeTemp = destSize - destSizeTemp;
 		}
@@ -156,12 +181,14 @@ private:
 	std::string depthFile_;
 	cv::VideoCapture cap_;
 	char *compressedSrc_;
+	char *compressedSrcOrig_;
 	size_t fileSize_;
 	size_t read_;
 	LZ4F_decompressionContext_t dctx_;
 	int width;
 	int height;
 	int fps;
+	size_t inputBufSize;
 };
 
 main(int argc, char **argv)
