@@ -28,17 +28,17 @@ class pointCloudBroadcaster
 {
 public:
     typedef sensor_msgs::PointCloud2 PointCloud;
-    pointCloudBroadcaster(ros::NodeHandle n, std::string rgb, std::string depth, std::string info) : it_(n), rgb_image(it_, rgb, 1), depth_image(it_, depth, 1), camInfo(n, info, 1), sync(MySyncPolicy(10), rgb_image, depth_image, camInfo)
+    pointCloudBroadcaster(ros::NodeHandle n, std::string rgb, std::string depth, std::string info) : it_(n), rgb_image(it_, rgb, 5), depth_image(it_, depth, 5), camInfo(n, info, 5), sync(MySyncPolicy(5), rgb_image, depth_image)
     {
         // advertise point cloud and run sync on images and camera_info
-        pub_point_cloud_ = n.advertise<PointCloud>("/camera/depth_registered/points", 1);
+        pub_point_cloud_ = n.advertise<PointCloud>("/camera/depth_registered/points", 5);
         // sync data streams and publish point cloud based on them
-        sync.registerCallback(boost::bind(&pointCloudBroadcaster::callback, this, _1, _2, _3));
+        camInfo.registerCallback(boost::bind(&pointCloudBroadcaster::cameraData, this, _1));
+        sync.registerCallback(boost::bind(&pointCloudBroadcaster::callback, this, _1, _2));
     }
-    void callback(const sensor_msgs::ImageConstPtr &rgb_msg_in, const sensor_msgs::ImageConstPtr &depth_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
+    void callback(const sensor_msgs::ImageConstPtr &rgb_msg_in, const sensor_msgs::ImageConstPtr &depth_msg)
     {
         // Update camera model
-        model_.fromCameraInfo(info_msg);
         sensor_msgs::ImageConstPtr rgb_msg = rgb_msg_in;
         rgb_msg = rgb_msg_in;
         // offset based on rgb image encoding BGR8
@@ -103,12 +103,15 @@ public:
         // publish point cloud
         pub_point_cloud_.publish(cloud_msg);
     }
+    void cameraData(const sensor_msgs::CameraInfoConstPtr& data){
+        model_.fromCameraInfo(data);
+    }
 private:
     image_transport::ImageTransport it_;
     image_transport::SubscriberFilter rgb_image;
     image_transport::SubscriberFilter depth_image;
     message_filters::Subscriber<sensor_msgs::CameraInfo> camInfo;
-    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo> MySyncPolicy;
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> MySyncPolicy;
     message_filters::Synchronizer<MySyncPolicy> sync;
     sensor_msgs::CameraInfo cameraInfo;
     image_geometry::PinholeCameraModel model_;
