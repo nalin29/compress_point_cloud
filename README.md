@@ -6,4 +6,4 @@ Then the color map is losslessly encoding through opencv that provides the user 
 change encoding algorithims. Then the decompress node will broadcast an uncompressed depth map
 and color map. This is then merged to recreate the point cloud in real time.
 
-[Informal White Paper] (https://github.com/nalin29/compress_point_cloud/blob/master/FRI_Final_Paper.pdf)
+[Informal White Paper](./FRI_Final_Paper.pdf)
